@@ -111,6 +111,9 @@
                 let tituloMatch = primeraLinea.match(/^#\s+(.+)$/);
                 let nombreTitulo = tituloMatch ? tituloMatch[1].trim() : `Seccion_${index + 1}`;
 
+                // Quitar atributos de ID estilo Pandoc/Markdown: {#id}, {.class}, etc.
+                nombreTitulo = nombreTitulo.replace(/\s*\{[^}]*\}\s*$/, '').trim();
+
                 // Sanitizar el nombre del archivo (quitar caracteres raros inválidos en sistemas operativos)
                 let nombreArchivo = nombreTitulo.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-_]/g, '').trim();
                 nombreArchivo = nombreArchivo.replace(/\s+/g, '_') + '.md';
