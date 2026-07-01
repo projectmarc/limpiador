@@ -34,10 +34,11 @@
                 <textarea id="inputText" class="w-full h-40 p-3 border border-gray-600 rounded-lg bg-gray-950 text-gray-200 focus:ring-2 focus:ring-blue-500 font-mono text-xs" placeholder="# Lista de Cambios..."></textarea>
             </div>
 
-            <div class="flex justify-center">
+            <div class="flex justify-center flex-col items-center gap-3">
                 <button onclick="procesarYSeparar()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-lg shadow-lg transition duration-200 cursor-pointer">
                     Procesar y Separar Archivos
                 </button>
+                <p id="errorMsg" class="hidden text-sm text-red-400 font-medium"></p>
             </div>
         </div>
 
@@ -61,6 +62,16 @@
     <script>
         let archivosGenerados = [];
 
+        function mostrarError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function ocultarError() {
+            document.getElementById('errorMsg').classList.add('hidden');
+        }
+
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -80,9 +91,10 @@
             
             listaContainer.innerHTML = '';
             archivosGenerados = [];
+            ocultarError();
 
             if (!texto.trim()) {
-                alert('Por favor, ingresa o carga algún texto primero.');
+                mostrarError('Por favor, ingresá o cargá algún texto primero.');
                 return;
             }
 
@@ -99,7 +111,7 @@
             bloques = bloques.filter(b => b.trim() !== '');
 
             if (bloques.length === 0) {
-                alert('No se encontraron secciones que comiencen con "# Título"');
+                mostrarError('No se encontraron secciones que comiencen con "# Título"');
                 return;
             }
 
