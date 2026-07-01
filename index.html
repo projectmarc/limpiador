@@ -45,11 +45,11 @@
         <div id="resultadosSection" class="hidden bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-700">
             <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
                 <h2 class="text-xl font-bold text-green-400">📁 Archivos Generados</h2>
-                <button onclick="descargarTodos()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-4 rounded transition cursor-pointer">
+                <button id="btnDescargar" onclick="descargarSegunSeleccion()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-4 rounded transition cursor-pointer">
                     Descargar Todos los Archivos 📥
                 </button>
             </div>
-            <p class="text-xs text-amber-400 mb-4">Los archivos individuales se descargan por separado. "Descargar todos" genera un .zip.</p>
+            <p class="text-xs text-amber-400 mb-4">Seleccioná archivos para descargar solo los elegidos, o descargalos todos de una.</p>
             <div id="listaArchivos" class="space-y-3">
                 </div>
         </div>
@@ -139,10 +139,23 @@
 
                 // 4. Renderizar la interfaz visual para cada archivo
                 const card = document.createElement('div');
-                card.className = "flex items-center justify-between p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-gray-600 transition";
+                card.className = "flex items-center gap-3 p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-gray-600 transition cursor-pointer select-none";
+                card.dataset.index = index;
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') return;
+                    toggleSeleccion(index, card, checkbox);
+                });
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = "w-4 h-4 accent-green-500 shrink-0 cursor-pointer";
+                checkbox.addEventListener('change', () => {
+                    actualizarEstadoCard(card, checkbox.checked);
+                    actualizarBotonDescarga();
+                });
 
                 const info = document.createElement('div');
-                info.className = "overflow-hidden mr-4";
+                info.className = "overflow-hidden flex-1";
 
                 const titulo = document.createElement('p');
                 titulo.className = "text-sm font-semibold text-gray-200 truncate";
@@ -158,8 +171,12 @@
                 const btn = document.createElement('button');
                 btn.className = "bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0";
                 btn.textContent = "Descargar 📄";
-                btn.addEventListener('click', () => descargarUnico(index));
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    descargarUnico(index);
+                });
 
+                card.appendChild(checkbox);
                 card.appendChild(info);
                 card.appendChild(btn);
                 listaContainer.appendChild(card);
@@ -187,9 +204,56 @@
             descargarBlob(archivo.content, archivo.filename);
         }
 
-        function descargarTodos() {
+        function toggleSeleccion(index, card, checkbox) {
+            checkbox.checked = !checkbox.checked;
+            actualizarEstadoCard(card, checkbox.checked);
+            actualizarBotonDescarga();
+        }
+
+        function actualizarEstadoCard(card, seleccionado) {
+            if (seleccionado) {
+                card.classList.add('border-green-500', 'bg-gray-800');
+                card.classList.remove('border-gray-700', 'bg-gray-900');
+            } else {
+                card.classList.remove('border-green-500', 'bg-gray-800');
+                card.classList.add('border-gray-700', 'bg-gray-900');
+            }
+        }
+
+        function getSeleccionados() {
+            return Array.from(document.querySelectorAll('#listaArchivos input[type=checkbox]'))
+                .map((cb, i) => ({ cb, i }))
+                .filter(({ cb }) => cb.checked)
+                .map(({ i }) => i);
+        }
+
+        function actualizarBotonDescarga() {
+            const seleccionados = getSeleccionados();
+            const btn = document.getElementById('btnDescargar');
+            if (seleccionados.length > 0) {
+                btn.textContent = `Descargar seleccionados (${seleccionados.length}) 📥`;
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                btn.classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+            } else {
+                btn.textContent = 'Descargar Todos los Archivos 📥';
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+            }
+        }
+
+        function descargarSegunSeleccion() {
+            const seleccionados = getSeleccionados();
+            const objetivo = seleccionados.length > 0
+                ? seleccionados.map(i => archivosGenerados[i])
+                : archivosGenerados;
+
+            if (objetivo.length === 1) {
+                descargarBlob(objetivo[0].content, objetivo[0].filename);
+                return;
+            }
+
             const zip = new JSZip();
-            archivosGenerados.forEach((archivo) => {
+            objetivo.forEach((archivo) => {
                 zip.file(archivo.filename, archivo.content);
             });
             zip.generateAsync({ type: 'blob' }).then((blob) => {
