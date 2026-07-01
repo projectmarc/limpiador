@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splittet & Limpiador Markdown</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-blue-400 mb-2">Limpia y Separa</h1>
+            <p class="text-gray-400 text-sm">Limpia un poco el formato, separa el documento por secciones detectando los <code class="bg-gray-800 px-1.5 py-0.5 rounded text-yellow-400"># Títulos</code>.</p>
+        </header>
+
+        <div class="bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-700 mb-8">
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">1. Seleccioná o arrastrá el archivo .md completo:</label>
+                <div class="flex items-center justify-center w-full">
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-750 hover:bg-gray-700 transition">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <span class="text-3xl mb-2">📄</span>
+                            <p class="text-sm text-gray-400" id="file-label"><span class="font-semibold">Haz clic para buscar</span> o arrastra el archivo aquí</p>
+                        </div>
+                        <input id="fileInput" type="file" accept=".md" class="hidden" onchange="handleFileSelect(event)" />
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">O pegá el texto manualmente si querés:</label>
+                <textarea id="inputText" class="w-full h-40 p-3 border border-gray-600 rounded-lg bg-gray-950 text-gray-200 focus:ring-2 focus:ring-blue-500 font-mono text-xs" placeholder="# Lista de Cambios..."></textarea>
+            </div>
+
+            <div class="flex justify-center">
+                <button onclick="procesarYSeparar()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-lg shadow-lg transition duration-200 cursor-pointer">
+                    Procesar y Separar Archivos
+                </button>
+            </div>
+        </div>
+
+        <div id="resultadosSection" class="hidden bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-700">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                <h2 class="text-xl font-bold text-green-400">📁 Archivos Generados</h2>
+            </div>
+            
+            <div id="listaArchivos" class="space-y-3">
+                </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 text-xs text-gray-500 border-t border-gray-800">
+        Sí, esto está recontra vibecodeado.
+    </footer>
+
+    <script>
+        let archivosGenerados = [];
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('file-label').innerHTML = `Archivo cargado: <span class="text-blue-400 font-bold">${file.name}</span>`;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('inputText').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        function procesarYSeparar() {
+            let texto = document.getElementById('inputText').value;
+            const listaContainer = document.getElementById('listaArchivos');
+            const resultadosSection = document.getElementById('resultadosSection');
+            
+            listaContainer.innerHTML = '';
+            archivosGenerados = [];
+
+            if (!texto.trim()) {
+                alert('Por favor, ingresa o carga algún texto primero.');
+                return;
+            }
+
+            // 1. Limpieza base (lo de arriba y el Base64 de abajo)
+            texto = texto.replace(/^[\s\S]*?(?=# Lista de Cambios)/, '');
+            texto = texto.replace(/\[image1\]: <data:image\/png;base64,[\s\S]*/, '');
+
+            // 2. Separar por títulos principales (# ) usando un lookahead regex
+            // Esto divide el texto manteniendo el '#' al principio de cada bloque
+            let bloques = texto.split(/^(?=# )/gm);
+
+            // Filtrar bloques vacíos
+            bloques = bloques.filter(b => b.trim() !== '');
+
+            if (bloques.length === 0) {
+                alert('No se encontraron secciones que comiencen con "# Título"');
+                return;
+            }
+
+            // 3. Procesar cada bloque para extraer su título y crear el archivo
+            bloques.forEach((bloque, index) => {
+                // Encontrar la primera línea que tiene el # Titulo
+                const lineas = bloque.split('\n');
+                const primeraLinea = lineas[0];
+                
+                // Extraer el texto limpio del título
+                let tituloMatch = primeraLinea.match(/^#\s+(.+)$/);
+                let nombreTitulo = tituloMatch ? tituloMatch[1].trim() : `Seccion_${index + 1}`;
+
+                // Sanitizar el nombre del archivo (quitar caracteres raros inválidos en sistemas operativos)
+                let nombreArchivo = nombreTitulo.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-_]/g, '').trim();
+                nombreArchivo = nombreArchivo.replace(/\s+/g, '_') + '.md';
+
+                archivosGenerados.push({
+                    filename: nombreArchivo,
+                    content: bloque.trim()
+                });
+
+                // 4. Renderizar la interfaz visual para cada archivo
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-gray-600 transition";
+                card.innerHTML = `
+                    <div class="overflow-hidden mr-4">
+                        <p class="text-sm font-semibold text-gray-200 truncate">${nombreArchivo}</p>
+                        <p class="text-xs text-gray-500 truncate">${bloque.trim().substring(0, 80)}...</p>
+                    </div>
+                    <button onclick="descargarUnico(${index})" class="bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0">
+                        Descargar 📄
+                    </button>
+                `;
+                listaContainer.appendChild(card);
+            });
+
+            // Mostrar la sección de resultados
+            resultadosSection.classList.remove('hidden');
+        }
+
+        function descargarBlob(content, filename) {
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function descargarUnico(index) {
+            const archivo = archivosGenerados[index];
+            descargarBlob(archivo.content, archivo.filename);
+        }
+
+        function descargarTodos() {
+            archivosGenerados.forEach((archivo, index) => {
+                // Usamos un pequeño delay para que el navegador no bloquee las descargas simultáneas
+                setTimeout(() => {
+                    descargarBlob(archivo.content, archivo.filename);
+                }, index * 250);
+            });
+        }
+    </script>
+</body>
+</html>
