@@ -128,15 +128,28 @@
                 // 4. Renderizar la interfaz visual para cada archivo
                 const card = document.createElement('div');
                 card.className = "flex items-center justify-between p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-gray-600 transition";
-                card.innerHTML = `
-                    <div class="overflow-hidden mr-4">
-                        <p class="text-sm font-semibold text-gray-200 truncate">${nombreArchivo}</p>
-                        <p class="text-xs text-gray-500 truncate">${bloque.trim().substring(0, 80)}...</p>
-                    </div>
-                    <button onclick="descargarUnico(${index})" class="bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0">
-                        Descargar 📄
-                    </button>
-                `;
+
+                const info = document.createElement('div');
+                info.className = "overflow-hidden mr-4";
+
+                const titulo = document.createElement('p');
+                titulo.className = "text-sm font-semibold text-gray-200 truncate";
+                titulo.textContent = nombreArchivo;
+
+                const preview = document.createElement('p');
+                preview.className = "text-xs text-gray-500 truncate";
+                preview.textContent = bloque.trim().substring(0, 80) + '...';
+
+                info.appendChild(titulo);
+                info.appendChild(preview);
+
+                const btn = document.createElement('button');
+                btn.className = "bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0";
+                btn.textContent = "Descargar 📄";
+                btn.addEventListener('click', () => descargarUnico(index));
+
+                card.appendChild(info);
+                card.appendChild(btn);
                 listaContainer.appendChild(card);
             });
 
