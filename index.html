@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Splittet & Limpiador Markdown</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
@@ -47,7 +48,7 @@
                     Descargar Todos los Archivos 📥
                 </button>
             </div>
-            <p class="text-xs text-amber-400 mb-4">Nota: Cuidado porque a veces el navegador queda loco con la opción de descargar todo.</p>
+            <p class="text-xs text-amber-400 mb-4">Los archivos individuales se descargan por separado. "Descargar todos" genera un .zip.</p>
             <div id="listaArchivos" class="space-y-3">
                 </div>
         </div>
@@ -87,7 +88,7 @@
 
             // 1. Limpieza base (lo de arriba y el Base64 de abajo)
             texto = texto.replace(/^[\s\S]*?(?=^# [^#])/m, '');
-            texto = texto.replace(/\[image1\]: <data:image\/png;base64,[\s\S]*/, '');
+            texto = texto.replace(/\[\w+\]: <data:image\/[^;]+;base64,[\s\S]*$/, '');
 
             // 2. Separar por títulos principales (# ) usando un lookahead regex
             // Esto divide el texto manteniendo el '#' al principio de cada bloque
@@ -127,15 +128,28 @@
                 // 4. Renderizar la interfaz visual para cada archivo
                 const card = document.createElement('div');
                 card.className = "flex items-center justify-between p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-gray-600 transition";
-                card.innerHTML = `
-                    <div class="overflow-hidden mr-4">
-                        <p class="text-sm font-semibold text-gray-200 truncate">${nombreArchivo}</p>
-                        <p class="text-xs text-gray-500 truncate">${bloque.trim().substring(0, 80)}...</p>
-                    </div>
-                    <button onclick="descargarUnico(${index})" class="bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0">
-                        Descargar 📄
-                    </button>
-                `;
+
+                const info = document.createElement('div');
+                info.className = "overflow-hidden mr-4";
+
+                const titulo = document.createElement('p');
+                titulo.className = "text-sm font-semibold text-gray-200 truncate";
+                titulo.textContent = nombreArchivo;
+
+                const preview = document.createElement('p');
+                preview.className = "text-xs text-gray-500 truncate";
+                preview.textContent = bloque.trim().substring(0, 80) + '...';
+
+                info.appendChild(titulo);
+                info.appendChild(preview);
+
+                const btn = document.createElement('button');
+                btn.className = "bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0";
+                btn.textContent = "Descargar 📄";
+                btn.addEventListener('click', () => descargarUnico(index));
+
+                card.appendChild(info);
+                card.appendChild(btn);
                 listaContainer.appendChild(card);
             });
 
@@ -162,11 +176,12 @@
         }
 
         function descargarTodos() {
-            archivosGenerados.forEach((archivo, index) => {
-                // Usamos un pequeño delay para que el navegador no bloquee las descargas simultáneas
-                setTimeout(() => {
-                    descargarBlob(archivo.content, archivo.filename);
-                }, index * 250);
+            const zip = new JSZip();
+            archivosGenerados.forEach((archivo) => {
+                zip.file(archivo.filename, archivo.content);
+            });
+            zip.generateAsync({ type: 'blob' }).then((blob) => {
+                descargarBlob(blob, 'archivos.zip');
             });
         }
     </script>
