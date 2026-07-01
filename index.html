@@ -86,12 +86,13 @@
             }
 
             // 1. Limpieza base (lo de arriba y el Base64 de abajo)
-            texto = texto.replace(/^[\s\S]*?(?=# Lista de Cambios)/, '');
+            texto = texto.replace(/^[\s\S]*?(?=^# [^#])/m, '');
             texto = texto.replace(/\[image1\]: <data:image\/png;base64,[\s\S]*/, '');
 
             // 2. Separar por títulos principales (# ) usando un lookahead regex
             // Esto divide el texto manteniendo el '#' al principio de cada bloque
-            let bloques = texto.split(/^(?=# )/gm);
+            // Solo H1: exactamente un '#' seguido de espacio (no ## ni ###)
+            let bloques = texto.split(/^(?=# [^#])/gm);
 
             // Filtrar bloques vacíos
             bloques = bloques.filter(b => b.trim() !== '');
