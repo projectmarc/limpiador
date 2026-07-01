@@ -141,8 +141,7 @@
                 const card = document.createElement('div');
                 card.className = "flex items-center gap-3 p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-gray-600 transition cursor-pointer select-none";
                 card.dataset.index = index;
-                card.addEventListener('click', (e) => {
-                    if (e.target.tagName === 'BUTTON') return;
+                card.addEventListener('click', () => {
                     toggleSeleccion(index, card, checkbox);
                 });
 
@@ -168,17 +167,8 @@
                 info.appendChild(titulo);
                 info.appendChild(preview);
 
-                const btn = document.createElement('button');
-                btn.className = "bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-1.5 px-3 rounded font-medium transition cursor-pointer shrink-0";
-                btn.textContent = "Descargar 📄";
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    descargarUnico(index);
-                });
-
                 card.appendChild(checkbox);
                 card.appendChild(info);
-                card.appendChild(btn);
                 listaContainer.appendChild(card);
             });
 
@@ -197,11 +187,6 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }
-
-        function descargarUnico(index) {
-            const archivo = archivosGenerados[index];
-            descargarBlob(archivo.content, archivo.filename);
         }
 
         function toggleSeleccion(index, card, checkbox) {
